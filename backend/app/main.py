@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+#CORS 미들웨어 -> 뭐 없으면 api호출 시 브라우저가 차단된다함.
+
+
 
 # fastapi 객체 만들기, 앱, 버전 설정 가능함.
 app = FastAPI(title = "Trello", version = "0.1")
@@ -9,3 +13,12 @@ app = FastAPI(title = "Trello", version = "0.1")
 if __name__ == "__main__" :
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credencials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+#app.include_router(api_router, prefix="/api/v1")
