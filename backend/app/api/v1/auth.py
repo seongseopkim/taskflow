@@ -77,6 +77,6 @@ async def refresh(data: RefreshRequest):
     user_id = int(payload["sub"])
     return TokenResponse(
         access_token = create_access_token(user_id),
-        refresh_token = data.refresh_token(user_id),
+        refresh_token = data.refresh_token,
         token_type = "bearer"
     )
