@@ -3,9 +3,16 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 #CORS 미들웨어 -> 뭐 없으면 api호출 시 브라우저가 차단된다함.
 
+### api 추가
 
+# main.py에 추가
 from app.api.v1.auth import router as auth_router
-
+from app.api.v1.workspaces import router as workspace_router
+from app.api.v1.boards import router as board_router
+from app.api.v1.lists import router as list_router
+from app.api.v1.cards import router as card_router
+from app.api.v1.comments import router as comment_router
+from app.api.v1.labels import router as label_router
 
 # fastapi 객체 만들기, 앱, 버전 설정 가능함.
 app = FastAPI(title = "Trello", version = "0.1")
@@ -17,12 +24,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-
-
-
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(workspace_router, prefix="/api/v1")
+app.include_router(board_router, prefix="/api/v1")
+app.include_router(list_router, prefix="/api/v1")
+app.include_router(card_router, prefix="/api/v1")
+app.include_router(comment_router, prefix="/api/v1")
+app.include_router(label_router, prefix="/api/v1")
+
 
 
 #여기선 서버를 키는 작업을 할거임. 근데 아래 if문은, 혹시 다른 파일에서 main.py를 import했을 때 자동으로 서버가 실행되면 안되기 때문에, main.py를 직접 실행시켯을 때에만
