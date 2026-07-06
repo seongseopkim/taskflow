@@ -13,6 +13,7 @@ from app.api.v1.lists import router as list_router
 from app.api.v1.cards import router as card_router
 from app.api.v1.comments import router as comment_router
 from app.api.v1.labels import router as label_router
+from app.api.v1.websocket import router as ws_router
 
 # fastapi 객체 만들기, 앱, 버전 설정 가능함.
 app = FastAPI(title = "Trello", version = "0.1")
@@ -31,6 +32,7 @@ app.include_router(list_router, prefix="/api/v1")
 app.include_router(card_router, prefix="/api/v1")
 app.include_router(comment_router, prefix="/api/v1")
 app.include_router(label_router, prefix="/api/v1")
+app.include_router(ws_router)  # prefix 없이! /ws/로 시작하니까
 
 
 

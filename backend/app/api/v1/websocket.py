@@ -54,6 +54,5 @@ async def notification_websocket(websocket: WebSocket, user_id: int):
             data = json.loads(data)
     except WebSocketDisconnect:
         del user_connections[user_id]
-
     # 4. 연결 해제 시 제거
-    pass
+    
