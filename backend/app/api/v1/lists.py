@@ -7,7 +7,7 @@ from app.models.list import List
 from app.models.board import Board
 from app.schemas.list import ListCreate, ListUpdate, ListResponse
 from app.dependencies import get_current_user
-from app.core.permissions import check_permission, Role
+from app.core.permissions import check_permission, Role, check_board_permission, check_list_permission
 
 router = APIRouter(tags=["lists"])
 
@@ -15,7 +15,7 @@ router = APIRouter(tags=["lists"])
 @router.get("/boards/{board_id}/lists")
 async def get_lists(
     board_id: int,
-    member=Depends(check_permission(Role.VIEWER)),
+    member=Depends(check_board_permission(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
 ):
     # Board의 리스트를 position 순서로 조회
@@ -36,7 +36,7 @@ async def get_lists(
 async def create_list(
     board_id: int,
     data: ListCreate,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_board_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     # 1. 현재 리스트들 중 가장 큰 position 조회
@@ -57,7 +57,7 @@ async def create_list(
 
     db.add(new_list)
     await db.flush()
-
+    await db.refresh(new_list)
     return ListResponse.model_validate(new_list)
 
     # 힌트: select(func.max(List.position)).where(List.board_id == board_id)
@@ -67,7 +67,7 @@ async def create_list(
 @router.delete("/lists/{list_id}", status_code=204)
 async def delete_list(
     list_id: int,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_list_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     lst = await db.get(List, list_id)

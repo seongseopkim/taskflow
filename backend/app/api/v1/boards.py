@@ -43,7 +43,7 @@ async def create_board(
 
     db.add(board)
     await db.flush()
-    
+    await db.refresh(board)
     return BoardResponse.model_validate(board
                                         )
 

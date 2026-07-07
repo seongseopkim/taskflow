@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from app.database import get_db
 from app.models.user import User
@@ -37,7 +37,7 @@ async def create_workspace(
 
     db.add(workspace)
     await db.flush()
-
+    await db.refresh(workspace)
     workspacemember = WorkspaceMember(user_id = current_user.id, workspace_id = workspace.id, role = "owner", )
     db.add(workspacemember)
 
@@ -67,6 +67,10 @@ async def delete_workspace(
     if not workspace :
         raise HTTPException(404, "워크스페이스를 찾을 수 없습니다" )
     
+# 자식 데이터(workspace_members) 먼저 삭제
+    await db.execute(
+        delete(WorkspaceMember).where(WorkspaceMember.workspace_id == workspace_id)
+    )
     await db.delete(workspace)
     await db.flush()
 

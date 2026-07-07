@@ -7,7 +7,7 @@ from app.models.card import Card
 from app.models.list import List
 from app.schemas.card import CardCreate, CardUpdate, CardMove, CardResponse
 from app.dependencies import get_current_user
-from app.core.permissions import check_permission, Role
+from app.core.permissions import check_permission, check_card_permission, Role, check_board_permission, check_list_permission
 
 router = APIRouter(tags=["cards"])
 
@@ -15,7 +15,7 @@ router = APIRouter(tags=["cards"])
 @router.get("/lists/{list_id}/cards")
 async def get_cards(
     list_id: int,
-    member=Depends(check_permission(Role.VIEWER)),
+    member=Depends(check_list_permission(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -33,7 +33,7 @@ async def get_cards(
 async def create_card(
     list_id: int,
     data: CardCreate,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_list_permission(Role.EDITOR)),
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -62,7 +62,7 @@ async def create_card(
     
     db.add(new_card)
     await db.flush()
-
+    await db.refresh(new_card)
     return CardResponse.model_validate(new_card)
 
 # 3. 카드 수정 (editor 이상)
@@ -70,7 +70,7 @@ async def create_card(
 async def update_card(
     card_id: int,
     data: CardUpdate,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_card_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     # 카드 조회 → 보낸 필드만 수정
@@ -89,7 +89,7 @@ async def update_card(
         card.due_date = data.due_date
 
     await db.flush()
-
+    await db.refresh(card)
     return CardResponse.model_validate(card)
 
 # 4. 카드 이동 (editor 이상)
@@ -97,7 +97,7 @@ async def update_card(
 async def move_card(
     card_id: int,
     data: CardMove,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_card_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     # 카드 조회 → list_id + position 변경
@@ -116,7 +116,7 @@ async def move_card(
 @router.delete("/cards/{card_id}", status_code=204)
 async def delete_card(
     card_id: int,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_card_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     card = await db.get(Card, card_id)

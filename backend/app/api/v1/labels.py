@@ -42,6 +42,7 @@ async def create_label(
 
     db.add(label)
     await db.flush()
+    await db.refresh(label)
 
     return LabelResponse.model_validate(label)
 

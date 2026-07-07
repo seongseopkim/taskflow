@@ -1,6 +1,3 @@
-# 진짜 말 그대로 권한 체크하는거임. 
-# 이 유저가, 이 워크스페이스에서 어떤 role인지를 판별해주는 것이라고 생각하면 될듯.
-
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,39 +6,89 @@ from enum import Enum
 from app.database import get_db
 from app.models.user import User
 from app.models.workspace import WorkspaceMember
+from app.models.board import Board
+from app.models.list import List
+from app.models.card import Card
 from app.dependencies import get_current_user
 
-# 역할 정의
 class Role(str, Enum):
     OWNER = "owner"
     EDITOR = "editor"
     VIEWER = "viewer"
 
-# 역할 계층 (숫자가 클수록 권한 높음)
 ROLE_HIERARCHY = {Role.OWNER: 3, Role.EDITOR: 2, Role.VIEWER: 1}
 
+
+# ── 공통 로직: workspace_id로 실제 권한 확인 ──
+async def _verify_role(db: AsyncSession, user_id: int, workspace_id: int, required: Role):
+    result = await db.execute(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.user_id == user_id,
+        )
+    )
+    member = result.scalar_one_or_none()
+
+    if not member:
+        raise HTTPException(403, "워크스페이스 멤버가 아닙니다")
+
+    if ROLE_HIERARCHY[member.role] < ROLE_HIERARCHY[required]:
+        raise HTTPException(403, "권한이 부족합니다")
+
+    return member
+
+
+# ── 1. workspace_id로 직접 체크 (workspaces.py에서 사용) ──
 def check_permission(required: Role):
     async def _check(
         workspace_id: int,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ):
-        
-        result = await db.execute(select(WorkspaceMember).where(
-            WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == current_user.id,))
-        ####### 진짜중요함. result는 그냥 result라는 객체 타임이라서, 꺼내서 사용해야함.  
-        ## 이때, scalar같은거 사용하는거!!!!
-        member = result.scalar_one_or_none()
+        return await _verify_role(db, current_user.id, workspace_id, required)
+    return _check
 
-        if member is None:
-            raise HTTPException(403, "멤버가 아닙니다")
-        if ROLE_HIERARCHY[member.role] < ROLE_HIERARCHY[required]:
-            raise HTTPException(403, "권한이 없습니다")
-        
-        return member
-        # 1. workspace_members에서 "이 유저가 이 워크스페이스에 속해있는지" 조회
-        #  1-1 : workspace_id로
-        # 2. 멤버가 아니면 HTTPException(403, "멤버가 아닙니다")
-        # 3. 역할 계층 비교: 유저의 역할 숫자 < 요구 역할 숫자면 403
-        # 4. member 반환
+
+# ── 2. board_id로 체크 (boards.py, lists.py에서 사용) ──
+def check_board_permission(required: Role):
+    async def _check(
+        board_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        board = await db.get(Board, board_id)
+        if not board:
+            raise HTTPException(404, "보드를 찾을 수 없습니다")
+        return await _verify_role(db, current_user.id, board.workspace_id, required)
+    return _check
+
+
+# ── 3. list_id로 체크 (카드 생성 등에서 사용) ──
+def check_list_permission(required: Role):
+    async def _check(
+        list_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        lst = await db.get(List, list_id)
+        if not lst:
+            raise HTTPException(404, "리스트를 찾을 수 없습니다")
+        board = await db.get(Board, lst.board_id)
+        return await _verify_role(db, current_user.id, board.workspace_id, required)
+    return _check
+
+
+# ── 4. card_id로 체크 (카드 수정/이동/삭제, 댓글, 라벨에서 사용) ──
+def check_card_permission(required: Role):
+    async def _check(
+        card_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        card = await db.get(Card, card_id)
+        if not card:
+            raise HTTPException(404, "카드를 찾을 수 없습니다")
+        lst = await db.get(List, card.list_id)
+        board = await db.get(Board, lst.board_id)
+        return await _verify_role(db, current_user.id, board.workspace_id, required)
     return _check

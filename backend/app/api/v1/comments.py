@@ -43,6 +43,7 @@ async def create_comment(
     
     db.add(comment)
     await db.flush()
+    await db.refresh(comment)
 
     return CommentResponse.model_validate(comment)
 

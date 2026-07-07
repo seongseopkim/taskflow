@@ -37,7 +37,7 @@ async def signup(data: UserCreate, db: AsyncSession = Depends(get_db)):
                 hashed_password = hash_password(data.password))
     db.add(user)
     await db.flush()
-
+    await db.refresh(user)
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
