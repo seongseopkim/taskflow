@@ -14,13 +14,13 @@ from app.api.v1.cards import router as card_router
 from app.api.v1.comments import router as comment_router
 from app.api.v1.labels import router as label_router
 from app.api.v1.websocket import router as ws_router
-
+from app.api.v1.notifications import router as notification_router
 # fastapi 객체 만들기, 앱, 버전 설정 가능함.
 app = FastAPI(title = "Trello", version = "0.1")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,6 +33,7 @@ app.include_router(card_router, prefix="/api/v1")
 app.include_router(comment_router, prefix="/api/v1")
 app.include_router(label_router, prefix="/api/v1")
 app.include_router(ws_router)  # prefix 없이! /ws/로 시작하니까
+app.include_router(notification_router, prefix="/api/v1")
 
 
 

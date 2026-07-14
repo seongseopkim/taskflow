@@ -7,3 +7,4 @@ from app.models.card import Card
 from app.models.comment import Comment
 from app.models.label import Label, CardLabel
 from app.models.activity import Activity
+from app.models.notification import Notification

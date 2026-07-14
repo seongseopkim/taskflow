@@ -13,3 +13,6 @@ class LabelResponse(BaseModel):
     name : str
     color : str
 
+    class Config:
+        from_attributes = True
+

@@ -1,0 +1,105 @@
+{
+  "common": {
+    "appName": "TaskFlow",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "create": "作成",
+    "edit": "編集",
+    "close": "閉じる",
+    "confirm": "確認",
+    "loading": "読み込み中...",
+    "retry": "再試行",
+    "error": "エラー",
+    "unknownError": "不明なエラーが発生しました",
+    "logout": "ログアウト",
+    "back": "戻る",
+    "add": "追加",
+    "none": "なし"
+  },
+  "errors": {
+    "connectionFailed": "サーバーに接続できません",
+    "invalidTokenFormat": "トークンの形式が正しくありません"
+  },
+  "auth": {
+    "loginTitle": "ログイン",
+    "signupTitle": "会員登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "name": "名前",
+    "loginButton": "ログイン",
+    "signupButton": "登録",
+    "noAccount": "アカウントをお持ちでないですか？ 会員登録",
+    "haveAccount": "すでにアカウントをお持ちですか？ ログイン",
+    "emailRequired": "メールアドレスを入力してください",
+    "passwordRequired": "パスワードを入力してください",
+    "nameRequired": "名前を入力してください"
+  },
+  "workspace": {
+    "title": "ワークスペース",
+    "create": "ワークスペースを作成",
+    "createTitle": "新しいワークスペース",
+    "nameLabel": "ワークスペース名",
+    "empty": "まだワークスペースがありません",
+    "deleteConfirm": "このワークスペースを削除しますか？元に戻せません。",
+    "inviteMember": "メンバーを招待",
+    "inviteEmail": "招待するメールアドレス",
+    "inviteRole": "権限",
+    "invite": "招待"
+  },
+  "board": {
+    "title": "ボード",
+    "create": "ボードを作成",
+    "createTitle": "新しいボード",
+    "nameLabel": "ボード名",
+    "empty": "まだボードがありません",
+    "deleteConfirm": "このボードを削除しますか？元に戻せません。",
+    "addList": "リストを追加",
+    "listTitleLabel": "リスト名",
+    "emptyList": "カードがありません"
+  },
+  "card": {
+    "addCard": "カードを追加",
+    "titleLabel": "カードタイトル",
+    "descriptionLabel": "説明",
+    "assigneeLabel": "担当者",
+    "dueDateLabel": "期限",
+    "detailTitle": "カード詳細",
+    "deleteConfirm": "このカードを削除しますか？",
+    "noDescription": "説明はありません",
+    "noDueDate": "期限なし",
+    "noAssignee": "担当者なし",
+    "pickDueDate": "期限を選択",
+    "clearDueDate": "期限をクリア"
+  },
+  "comment": {
+    "title": "コメント",
+    "placeholder": "コメントを入力してください",
+    "send": "送信",
+    "empty": "コメントがありません",
+    "deleteConfirm": "このコメントを削除しますか？"
+  },
+  "label": {
+    "title": "ラベル",
+    "create": "ラベルを作成",
+    "nameLabel": "ラベル名",
+    "colorLabel": "色 (#RRGGBB)",
+    "empty": "ラベルがありません",
+    "attach": "追加",
+    "detach": "削除",
+    "manage": "ラベル管理"
+  },
+  "notification": {
+    "title": "通知",
+    "empty": "通知はありません",
+    "markAllRead": "すべて既読にする",
+    "markRead": "既読にする",
+    "assignedMessage": "{name}さんがカードを割り当てました",
+    "commentMessage": "{name}さんがコメントを残しました"
+  },
+  "role": {
+    "owner": "オーナー",
+    "editor": "編集者",
+    "viewer": "閲覧者"
+  }
+}

@@ -1,5 +1,7 @@
 from app.database import Base
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, func, ForeignKey,Enum,UniqueConstraint
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, func, ForeignKey,Enum,UniqueConstraint, Index
+from sqlalchemy.orm import relationship
+
 class Workspace(Base):
     __tablename__ = "workspaces"
 
@@ -9,6 +11,7 @@ class Workspace(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+    boards = relationship("Board", back_populates="workspace", )
 
 class WorkspaceMember(Base):
     __tablename__ = "workspace_members"
@@ -23,3 +26,4 @@ class WorkspaceMember(Base):
     __table_args__ =(
         UniqueConstraint("user_id", "workspace_id"),
     )
+

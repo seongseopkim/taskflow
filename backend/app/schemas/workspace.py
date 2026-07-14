@@ -25,3 +25,12 @@ class MemberInvite(BaseModel):
     #멤버 초대
     email : str
     role : Role
+
+class WorkspaceMemberResponse(BaseModel):
+    user_id : int
+    name: str
+    email: str
+    role: str
+
+    class Config:
+        from_attributes = True

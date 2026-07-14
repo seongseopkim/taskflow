@@ -1,40 +1,64 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func ,select
 
 from app.database import get_db
 from app.models.comment import Comment
 from app.models.user import User
+from app.models.card import Card
 from app.schemas.comment import CommentCreate, CommentResponse
 from app.dependencies import get_current_user
-from app.core.permissions import check_permission, Role
+from app.core.permissions import check_permission, Role, check_card_permission
+from app.tasks.notification_tasks import send_comment_notification
+
+from app.schemas.common import PaginatedResponse
 
 router = APIRouter(tags=["comments"])
 
 # 1. 댓글 목록 조회 (카드의 댓글들)
-@router.get("/cards/{card_id}/comments")
+@router.get("/cards/{card_id}/comments", response_model = PaginatedResponse[CommentResponse])
 async def get_comments(
     card_id: int,
-    member=Depends(check_permission(Role.VIEWER)),
+    page : int = 1,
+    size : int = 20,
+    member=Depends(check_card_permission(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
 ):
+    
+    count_result = await db.execute(
+        select(func.count()).select_from(Comment)
+        .where(Comment.card_id == card_id))
+    
+    total = count_result.scalar()
+
     result = await db.execute(
         select(Comment).where(Comment.card_id == card_id)
+        .offset((page - 1) * size)
+        .limit(size)
     )
 
     comment = result.scalars().all()
 
-    return [CommentResponse.model_validate(cm) for cm in comment]
-
+    return PaginatedResponse(
+        items = [CommentResponse.model_validate(cm) for cm in comment],
+        page = page,
+        size = size,
+        total = total,
+        pages = (total + size -1 ) // size
+    )
 # 2. 댓글 작성 (viewer도 가능!)
 @router.post("/cards/{card_id}/comments", status_code=201)
 async def create_comment(
     card_id: int,
     data: CommentCreate,
     current_user: User = Depends(get_current_user),
-    member=Depends(check_permission(Role.VIEWER)),
+    member=Depends(check_card_permission(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
 ):
+    card = await db.get(Card, card_id)
+    if not card:
+        raise HTTPException(404, "카드가 없습니다")
+    
     comment = Comment(
         card_id = card_id,
         user_id = current_user.id,
@@ -44,7 +68,8 @@ async def create_comment(
     db.add(comment)
     await db.flush()
     await db.refresh(comment)
-
+    if card.assignee_id and card.assignee_id != current_user.id:
+        send_comment_notification.delay(card.assignee_id, card_id, current_user.name)
     return CommentResponse.model_validate(comment)
 
 # 3. 댓글 삭제 (본인 댓글만)

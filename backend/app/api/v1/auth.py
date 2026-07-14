@@ -37,10 +37,16 @@ async def signup(data: UserCreate, db: AsyncSession = Depends(get_db)):
                 hashed_password = hash_password(data.password))
     db.add(user)
     await db.flush()
+    #### 유저를 생성하기 전에 리프레시 토큰을 넣으려고 하면 안넣어질테니, flush()가 끝나고 나서 해봄. 
+    #### DB에도 저장, return에도 같은 값으로 보내야 문제가 없음.
+    first_refresh_token = create_refresh_token(user.id)
+    user.refresh_token = first_refresh_token
+    await db.flush()
+    
     await db.refresh(user)
     return TokenResponse(
         access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
+        refresh_token=first_refresh_token,
         token_type="bearer" #-> 먼뜻인지모름
     )
 
@@ -59,14 +65,19 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(401, "비밀번호가 틀렸습니다")
     
+    refresh_token = create_refresh_token(user.id)
+
+    user.refresh_token = refresh_token
+    await db.flush()
+
     return TokenResponse(
         access_token = create_access_token(user.id),
-        refresh_token = create_refresh_token(user.id),
+        refresh_token = refresh_token,
         token_type = "bearer"
     )
 
 @router.post("/refresh")
-async def refresh(data: RefreshRequest):
+async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     # 1. decode_token으로 refresh_token 검증
     # 2. 실패하거나 type이 "refresh"가 아니면 HTTPException(401)
     # 3. 새 access_token 발급해서 반환
@@ -75,8 +86,22 @@ async def refresh(data: RefreshRequest):
         raise HTTPException(401, "토큰이 이상합니닼")
     
     user_id = int(payload["sub"])
+    user = await db.get(User, user_id)
+
+    if not user:
+        raise HTTPException(404, "사용자를 찾을 수 없습니다")
+    
+    if data.refresh_token != user.refresh_token:
+        raise HTTPException(401, "토큰이 유효하지 않습니다.")
+    
+    #새로운 리프레시 토큰 만들어서, return값에도 쓰고, DB에도 저장해야함.
+    new_refresh_token = create_refresh_token(user_id)
+    
+    user.refresh_token = new_refresh_token
+    await db.flush()
+
     return TokenResponse(
         access_token = create_access_token(user_id),
-        refresh_token = data.refresh_token,
+        refresh_token = new_refresh_token,
         token_type = "bearer"
     )

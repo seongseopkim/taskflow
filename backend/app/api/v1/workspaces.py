@@ -5,7 +5,7 @@ from sqlalchemy import select, delete
 from app.database import get_db
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember
-from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse, MemberInvite
+from app.schemas.workspace import WorkspaceCreate, WorkspaceMemberResponse, WorkspaceUpdate, WorkspaceResponse, MemberInvite
 from app.dependencies import get_current_user
 from app.core.permissions import check_permission, Role
 
@@ -107,3 +107,30 @@ async def invite_member(
                                   role = data.role)
     db.add(new_member)
     await db.flush()
+
+@router.get("/{workspace_id}/members")
+async def get_workspace_members(
+    workspace_id: int,
+    member=Depends(check_permission(Role.VIEWER)),
+    db: AsyncSession = Depends(get_db), 
+):
+    result = await db.execute(
+        select(WorkspaceMember, User)
+        .join(User, WorkspaceMember.user_id == User.id)
+        .where(WorkspaceMember.workspace_id == workspace_id)
+    )
+
+    workspace_members = result.all()
+
+    if not workspace_members:
+        raise HTTPException(404, "현재 워크스페이스에 멤버가 없습니다.")
+    
+    return [
+        WorkspaceMemberResponse(
+            user_id = user.id,
+            name = user.name,
+            email = user.email,
+            role = wm.role,
+        )
+        for wm, user in workspace_members
+    ]

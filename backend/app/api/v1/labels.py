@@ -1,37 +1,55 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.database import get_db
 from app.models.label import Label, CardLabel
 from app.models.card import Card
 from app.schemas.label import LabelCreate, LabelResponse
 from app.dependencies import get_current_user
-from app.core.permissions import check_permission, Role
+from app.core.permissions import check_permission, check_card_permission,check_board_permission, Role
+
+from app.schemas.common import PaginatedResponse
 
 router = APIRouter(tags=["labels"])
 
 # 1. 보드의 라벨 목록 조회
-@router.get("/boards/{board_id}/labels")
+@router.get("/boards/{board_id}/labels", response_model = PaginatedResponse[LabelResponse])
 async def get_labels(
     board_id: int,
-    member=Depends(check_permission(Role.VIEWER)),
+    page : int = 1,
+    size : int = 20,
+    member=Depends(check_board_permission(Role.VIEWER)),
     db: AsyncSession = Depends(get_db),
 ):
+    count_result = await db.execute(
+        select(func.count()).select_from(Label)
+        .where(Label.board_id == board_id)
+    )
+    total = count_result.scalar()
+
     result = await db.execute(
         select(Label).where(Label.board_id == board_id)
+        .offset((page - 1) * size)
+        .limit(size)
     )
 
     labels = result.scalars().all()
 
-    return [LabelResponse.model_validate(lb) for lb in labels]
-
+    return PaginatedResponse(
+     items = [LabelResponse.model_validate(lb) for lb in labels],
+     size = size,
+     page = page,
+     total = total,
+     pages = (total + size - 1) // size
+     
+    )
 # 2. 라벨 생성 (editor 이상)
 @router.post("/boards/{board_id}/labels", status_code=201)
 async def create_label(
     board_id: int,
     data: LabelCreate,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_board_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     label = Label(
@@ -51,7 +69,7 @@ async def create_label(
 async def attach_label(
     card_id: int,
     label_id: int,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_card_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     # CardLabel 중간 테이블에 추가
@@ -87,7 +105,7 @@ async def attach_label(
 async def detach_label(
     card_id: int,
     label_id: int,
-    member=Depends(check_permission(Role.EDITOR)),
+    member=Depends(check_card_permission(Role.EDITOR)),
     db: AsyncSession = Depends(get_db),
 ):
     # CardLabel 중간 테이블에서 삭제
