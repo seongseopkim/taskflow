@@ -15,6 +15,7 @@ from app.api.v1.comments import router as comment_router
 from app.api.v1.labels import router as label_router
 from app.api.v1.websocket import router as ws_router
 from app.api.v1.notifications import router as notification_router
+from app.core.debug import router as debug_router
 # fastapi 객체 만들기, 앱, 버전 설정 가능함.
 app = FastAPI(title = "Trello", version = "0.1")
 
@@ -34,8 +35,7 @@ app.include_router(comment_router, prefix="/api/v1")
 app.include_router(label_router, prefix="/api/v1")
 app.include_router(ws_router)  # prefix 없이! /ws/로 시작하니까
 app.include_router(notification_router, prefix="/api/v1")
-
-
+app.include_router(debug_router)
 
 #여기선 서버를 키는 작업을 할거임. 근데 아래 if문은, 혹시 다른 파일에서 main.py를 import했을 때 자동으로 서버가 실행되면 안되기 때문에, main.py를 직접 실행시켯을 때에만
 # 서버가 돌아라! 라는 의미로 저 if문을 삽입하고, 조건에 충족했을 때에만 서버 가동을 넣어둠.
